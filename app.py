@@ -5,6 +5,7 @@ import bcrypt
 import jwt
 from flask import Flask, request, jsonify, current_app, Response, g
 from flask.json import JSONEncoder
+from flask_cors import CORS
 from sqlalchemy import create_engine, text
 
 
@@ -147,6 +148,8 @@ def login_required(f):
 def create_app(test_config=None):
     app = Flask(__name__)
 
+    CORS(app)
+
     app.json_encoder = CustomJsonEncoder
 
     if test_config is None:
@@ -226,13 +229,22 @@ def create_app(test_config=None):
     def unfollow():
         payload = request.json
         payload['id'] = g.user_id
-        
+
         insert_unfollow(payload)
 
         return '', 200
 
-    @app.route('/timeline/<int:user_id>', methods=['GET'])
+    @app.route('/timeline', methods=['GET'])
     @login_required
+    def user_timeline():
+        user_id = g.user_id
+
+        return jsonify({
+            'user_id': user_id,
+            'timeline': get_timeline(user_id)
+        })
+
+    @app.route('/timeline/<int:user_id>', methods=['GET'])
     def timeline(user_id):
         return jsonify({
             'user_id': user_id,
